@@ -1,48 +1,71 @@
 import React from 'react';
 import { Menubar } from 'primereact/menubar';
 import { Chip } from 'primereact/chip';
-import { useSelector } from 'react-redux';
+import { confirmDialog } from 'primereact/confirmdialog';
+import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../utils/redux/store';
 import { useHistory } from 'react-router-dom';
+import Cookies from 'js-cookie';
+import { domain } from '../../utils/config/api.config';
+import { useQueryClient } from 'react-query';
+import DispatchType from '../constants/DispatchType';
 
 const HeaderBar: React.FC = () => {
     const history = useHistory();
+    const dispatch = useDispatch();
     const userData = useSelector((state: RootState) => state.app.userData);
+    const queryClient = useQueryClient();
+
+    const onLogout = React.useCallback(() => {
+        dispatch({ type: DispatchType.APP.USER_DATA, data: undefined });
+        Cookies.remove('token', {
+            path: '/',
+            domain: domain,
+        });
+        queryClient.invalidateQueries();
+        history.push('/login');
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const confirmLogout = () => {
+        confirmDialog({
+            message: 'Bạn có chắc chắn muốn đăng xuất khỏi ứng dụng?',
+            header: 'Cảnh báo',
+            icon: 'pi pi-info-circle',
+            acceptClassName: 'p-button-danger',
+            accept: onLogout,
+        });
+    };
 
     const items = [
         {
-            label: 'Dashboard',
+            label: 'Tổng quan',
             icon: 'pi pi-fw pi-th-large',
         },
         {
-            label: 'Management',
+            label: 'Quản lý',
             icon: 'pi pi-fw pi-file',
             items: [
                 {
-                    label: 'Post',
+                    label: 'Chi tiêu',
                     icon: 'pi pi-fw pi-pencil',
-                    command: () => history.push('/post'),
+                    command: () => history.push('/spending'),
                 },
                 {
-                    label: 'Subscribe',
-                    icon: 'pi pi-fw pi-envelope',
-                    command: () => history.push('/subscribe'),
-                },
-                {
-                    label: 'Configuration',
+                    label: 'Thiết lập',
                     icon: 'pi pi-fw pi-cog',
                     command: () => history.push('/configuration'),
                 },
             ],
         },
         {
-            label: 'Log out',
+            label: 'Đăng xuất',
             icon: 'pi pi-sign-out',
+            command: confirmLogout,
         },
     ];
 
     return (
-        <div>
+        <div hidden={!userData}>
             <Menubar
                 model={items}
                 end={
